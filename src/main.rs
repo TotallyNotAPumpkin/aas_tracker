@@ -1,26 +1,109 @@
+use chrono::NaiveDate;
+
 fn main() {
-    // active, executive, 1100 (12), BE
-    // State = 168 | 3 = 171 (0b0000_0000_0011_0011)
-    let le_sys: u16 = 0b0000_0000_0011_0011;
+    let target_deadline = NaiveDate::from_ymd_opt(2026, 11, 15).expect("Invalid date");
 
-    println!("--- Little-Endian System State ({:#018b}) ---", le_sys);
-    println!("Is Active: {}", is_active(le_sys));
-    println!("Is Commander: {}", is_commander(le_sys));
-    println!("Is Big Endian: {}", is_big_endian(le_sys));
-    println!("Squadron ID: {}\n", get_squadron_id(le_sys));
+    let major_project = SquadronProject::new(
+        "Bedford VA Hospital Support",
+        "Emily",
+        vec![String::from("Smith"), String::from("Doe")],
+    );
 
-    // Example 2: Active cadet in Squadron 42, with Big-Endian flag set (Bit 9 = 1)
-    // Set Bit 9 (1 << 9 = 512): State = 171 + 512 - 2 (not commander) = 681
-    let be_sys: u16 = 681;
+    {
+        let specific_task = TaskAssignment::new(
+            "Assemble and organize care packages",
+            "Smith",
+            target_deadline,
+            &major_project,
+        );
 
-    println!("--- Big-Endian System State ({:#018b}) ---", be_sys);
-    println!("Is Active: {}", is_active(be_sys));
-    println!("Is Commander: {}", is_commander(be_sys));
-    println!("Is Big Endian: {}", is_big_endian(be_sys));
-    println!("Squadron ID: {}", get_squadron_id(be_sys));
+        audit_task(&specific_task);
+    } 
+}
+
+// ASSIGNMENT #3 -----------------------------------------------------
+// 1. Define two structs reflecting a natural dependency in your chosen domain (e.g., an "Active Session" 
+// struct that depends on a "User Account" struct).
+// 2. One struct should contain a reference (&) to data in the other struct.
+// 3. Use a lifetime parameter to maintain the relationship and guarantee memory safety between the two structs.
+// 4. Testing: In your main function, create instances (objects) of these two structs. Ensure the object being 
+// referenced has a longer lifetime than the object holding the reference. (Hint: use an inner scope), then write 
+// a function that takes an instance of the struct holding the reference and also requires a lifetime parameter.
+
+struct SquadronProject {
+    project_name: String,
+    project_lead: String,
+    project_team: Vec<String>,
+}
+
+struct TaskAssignment<'a> {
+    task_description: String,
+    task_lead: String,
+    deadline: NaiveDate,
+    project: &'a SquadronProject,
+}
+
+impl SquadronProject {
+    fn new(project_name: &str, project_lead: &str, project_team: Vec<String>) -> Self {
+        Self {
+            project_name: String::from(project_name),
+            project_lead: String::from(project_lead),
+            project_team,
+        }
+    }
+
+    fn get_project_name(&self) -> &str {
+        &self.project_name
+    }
+
+    fn get_project_lead(&self) -> &str {
+        &self.project_lead
+    }
+
+    fn get_project_team(&self) -> &[String] {
+        &self.project_team
+    }
+}
+
+impl<'a> TaskAssignment<'a> {
+    fn new(
+        task_description: &str,
+        task_lead: &str,
+        deadline: NaiveDate,
+        project: &'a SquadronProject,
+    ) -> Self {
+        Self {
+            task_description: String::from(task_description),
+            task_lead: String::from(task_lead),
+            deadline,
+            project,
+        }
+    }
+
+    fn get_task_description(&self) -> &str {
+        &self.task_description
+    }
+
+    fn get_task_lead(&self) -> &str {
+        &self.task_lead
+    }
+
+    fn get_deadline(&self) -> NaiveDate {
+        self.deadline
+    }
+
+    fn get_project(&self) -> &'a SquadronProject {
+        self.project
+    }
+}
+
+fn audit_task<'a>(task: &TaskAssignment<'a>) {
+    println!("Task '{}' assigned to {}.", task.get_task_description(), task.get_task_lead());
+    println!("Parent Project: {}", task.get_project().get_project_name());
 }
 
 
+// ASSIGNMENT #2 -----------------------------------------------------
 // 1. System State: Create one unsigned integer variable to represent the state of your system. 
 // Define the meaning of the bit flags within that variable for your specific domain 
 // (e.g., bit 0 represents "is_active", bit 1 represents "is_admin", bits 2-8 represent "group_id").
@@ -65,6 +148,30 @@ fn get_squadron_id(sys_state: u16) -> u16 {
     }
 }
 
+// main code:
+// fn main() {
+//     // active, executive, 1100 (12), BE
+//     // State = 168 | 3 = 171 (0b0000_0000_0011_0011)
+//     let le_sys: u16 = 0b0000_0000_0011_0011;
+
+//     println!("--- Little-Endian System State ({:#018b}) ---", le_sys);
+//     println!("Is Active: {}", is_active(le_sys));
+//     println!("Is Commander: {}", is_commander(le_sys));
+//     println!("Is Big Endian: {}", is_big_endian(le_sys));
+//     println!("Squadron ID: {}\n", get_squadron_id(le_sys));
+
+//     // Example 2: Active cadet in Squadron 42, with Big-Endian flag set (Bit 9 = 1)
+//     // Set Bit 9 (1 << 9 = 512): State = 171 + 512 - 2 (not commander) = 681
+//     let be_sys: u16 = 681;
+
+//     println!("--- Big-Endian System State ({:#018b}) ---", be_sys);
+//     println!("Is Active: {}", is_active(be_sys));
+//     println!("Is Commander: {}", is_commander(be_sys));
+//     println!("Is Big Endian: {}", is_big_endian(be_sys));
+//     println!("Squadron ID: {}", get_squadron_id(be_sys));
+// }
+
+// ASSIGNMENT #1 -----------------------------------------------------
 // Testing: Write a testing function that takes ownership of a String. 
 // This string should represent your system's core resource (e.g., a ticket ID or a user message), 
 // then write another testing function that works with an i32 (a Copy type), 

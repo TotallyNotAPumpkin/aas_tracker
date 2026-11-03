@@ -1,25 +1,112 @@
 use chrono::NaiveDate;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 fn main() {
+    println!("=== ASSIGNMENT 1: Ownership & Copy Semantics ===");
+    let t1 = String::from("Build AAS Tracker!");
+    let n1 = 3;
+    print_task_name(&t1); // Passed as reference to avoid moving t1
+    print_sub_tasks(n1);  // i32 implements Copy, so n1 remains valid
+    println!("Successfully reused task name: {}\n", t1);
+
+    println!("=== ASSIGNMENT 2: Bitwise System State & Endianness ===");
+    let le_sys: u16 = 0b0000_0000_0011_0011;
+    println!("--- Little-Endian System State ({:#018b}) ---", le_sys);
+    println!("Is Active: {}", is_active(le_sys));
+    println!("Is Commander: {}", is_commander(le_sys));
+    println!("Is Big Endian: {}", is_big_endian(le_sys));
+    println!("Squadron ID: {}\n", get_squadron_id(le_sys));
+
+    let be_sys: u16 = 681;
+    println!("--- Big-Endian System State ({:#018b}) ---", be_sys);
+    println!("Is Active: {}", is_active(be_sys));
+    println!("Is Commander: {}", is_commander(be_sys));
+    println!("Is Big Endian: {}", is_big_endian(be_sys));
+    println!("Squadron ID: {}\n", get_squadron_id(be_sys));
+
+    println!("=== ASSIGNMENT 3: Struct Dependencies & Lifetimes ===");
     let target_deadline = NaiveDate::from_ymd_opt(2026, 11, 15).expect("Invalid date");
 
-    let major_project = SquadronProject::new(
+    let current_project = SquadronProject::new(
         "Bedford VA Hospital Support",
         "Emily",
         vec![String::from("Smith"), String::from("Doe")],
     );
 
     {
+        // Inner scope: specific_task borrows current_project and drops first
         let specific_task = TaskAssignment::new(
             "Assemble and organize care packages",
             "Smith",
             target_deadline,
-            &major_project,
+            &current_project,
         );
 
         audit_task(&specific_task);
-    } 
+    }
+    println!("(Inner task dropped safely; parent project outlives it)\n");
+
+    println!("=== ASSIGNMENT 4: Multithreading & Concurrency Simulation ===");
+    run_multithreaded_simulation();
 }
+
+
+// ASSIGNMENT #4: Multithreading & Concurrent System Interaction
+// 1) Define your system's shared resource and wrap it in an Arc<Mutex<T>>.
+// 2) Spawn at least 3 threads. Inside each thread, perform an action on the shared data.
+// 3) Use thread::sleep with a small, random duration in each thread to simulate network or processing delays.
+// 4) Wait for all threads to finish, then print the final state of the shared resource. Be ready to explain how your code models your chosen scenario and prevents data races.
+
+fn run_multithreaded_simulation() {
+    // 1. Define the shared resource and wrap it in an Arc<Mutex<T>>
+    // Arc allows shared ownership across threads, and Mutex ensures thread-safe interior mutability.
+    let shared_project = Arc::new(Mutex::new(SquadronProject::new(
+        "Bedford VA Hospital Support",
+        "Emily",
+        vec![String::from("Smith")],
+    )));
+
+    let mut handles = vec![];
+    let incoming_cadets = vec!["Cadet Johnson", "Cadet Davis", "Cadet Wilson"];
+
+    // 2. Spawn at least 3 threads (one for each incoming cadet registration/action)
+    for (i, cadet) in incoming_cadets.into_iter().enumerate() {
+        let project_clone = Arc::clone(&shared_project);
+        let cadet_name = String::from(cadet);
+
+        let handle = thread::spawn(move || {
+            // 3. Simulate network or processing delays with thread::sleep
+            // Using a slightly varied duration per thread mimics real-world network jitter.
+            let delay_ms = 40 + (i as u64 * 25);
+            thread::sleep(Duration::from_millis(delay_ms));
+
+            // Acquire the mutex lock safely before modifying the shared project team
+            let mut project = project_clone.lock().unwrap();
+            project.project_team.push(cadet_name.clone());
+            
+            println!("-> Thread {} successfully registered {} to the project team.", i + 1, cadet_name);
+        });
+
+        handles.push(handle);
+    }
+
+    // 4. Wait for all threads to finish using .join()
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    // Print the final state of the shared resource after all threads have completed
+    let final_project = shared_project.lock().unwrap();
+    println!("\n--- Final Shared Squadron Project State ---");
+    println!("Project Name: {}", final_project.get_project_name());
+    println!("Project Lead: {}", final_project.get_project_lead());
+    println!("Final Project Team: {:?}\n", final_project.get_project_team());
+}
+
+
+
 
 // ASSIGNMENT #3 -----------------------------------------------------
 // 1. Define two structs reflecting a natural dependency in your chosen domain (e.g., an "Active Session" 

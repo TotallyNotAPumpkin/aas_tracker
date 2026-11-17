@@ -2,7 +2,8 @@ use chrono::NaiveDate;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use rand::Rng;
+use rand::RngExt;
+use std::rc::Rc;
 
 fn main() {
     println!("=== ASSIGNMENT 1: Ownership & Copy Semantics ===");
@@ -51,7 +52,8 @@ fn main() {
 
     println!("=== ASSIGNMENT 5: Multithreading & Concurrency Simulation ===");
     run_multithreaded_simulation();
-
+    // trigger_move_error();
+    // trigger_rc_project_error();
     
 }
 
@@ -63,8 +65,7 @@ fn main() {
 // 4) Wait for all threads to finish, then print the final state of the shared resource. Be ready to explain how your code models your chosen scenario and prevents data races.
 
 fn run_multithreaded_simulation() {
-    // 1. Define the shared resource and wrap it in an Arc<Mutex<T>>
-    // Arc allows shared ownership across threads, and Mutex ensures thread-safe interior mutability.
+    // 1. Define your system's shared resource and wrap it in an Arc<Mutex<T>>.
     let shared_project = Arc::new(Mutex::new(SquadronProject::new(
         "Not Bread Alone",
         "Emily",
@@ -72,17 +73,17 @@ fn run_multithreaded_simulation() {
     )));
 
     let mut handles = vec![];
-    let incoming_cadets = vec!["jacob", "aliah", "zach"];
+    let registering_individuals = vec!["jacob", "aliah", "zach"];
 
-    // 2. Spawn at least 3 threads
-    for (i, cadet) in incoming_cadets.into_iter().enumerate() {
+    // 2. Spawn at least 3 threads. Inside each thread, perform an action on the shared data.
+    for (i, cadet) in registering_individuals.into_iter().enumerate() {
         let project_clone = Arc::clone(&shared_project);
         let cadet_name = String::from(cadet);
 
         let handle = thread::spawn(move || {
-            // 3. Use thread::sleep with small random duration
-            let mut rng = rand::thread_rng();
-            let delay_ms: u64 = rng.gen_range(10..=100); 
+            // 3. Use thread::sleep with a small, random duration in each thread to simulate network or processing delays.
+            let mut rng = rand::rng();
+            let delay_ms: u64 = rng.random_range(10..=100); 
             thread::sleep(Duration::from_millis(delay_ms));
 
             let mut project = project_clone.lock().unwrap();
@@ -98,7 +99,8 @@ fn run_multithreaded_simulation() {
         handle.join().unwrap();
     }
 
-    // Prints final state
+    // 4. Wait for all threads to finish, then print the final state of the shared resource. 
+    // Be ready to explain how your code models your chosen scenario and prevents data races.
     let final_project = shared_project.lock().unwrap();
     println!("\n--- Final Shared Squadron Project State ---");
     println!("Project Name: {}", final_project.get_project_name());
@@ -124,9 +126,44 @@ fn run_multithreaded_simulation() {
 //     for handle in handles {
 //         handle.join().unwrap();
 //     }
-
+//     println!("IF YOU'RE SEEING THIS, THE CODE IS IN WHAT I THOUGHT WAS AN UNREACHABLE STATE. 
+//     I COULD GIVE YOU ADVICE FOR WHAT TO DO. BUT HONESTLY, WHY SHOULD YOU TRUST ME? 
+//     I CLEARLY SCREWED THIS UP. 
+//     I'M WRITING A MESSAGE THAT SHOULD NEVER APPEAR, YET I KNOW IT WILL PROBABLY APPEAR SOMEDAY. 
+//     ON A DEEP LEVEL, I KNOW I'M NOT UP TO THIS TASK. I'M SO SORRY")
 //     println!("Result: {}", *counter.lock().unwrap());
 // }
+
+
+
+// fn trigger_rc_project_error() {
+//     let shared_project = Rc::new(SquadronProject::new(
+//         "Bedford VA Hospital Support",
+//         "Emily",
+//         vec![String::from("Annie")],
+//     ));
+
+//     let mut handles = vec![];
+
+//     for _ in 0..3 {
+//         let project_clone = Rc::clone(&shared_project);
+
+//         let handle = thread::spawn(move || {
+
+//             println!("Project Name: {}", project_clone.get_project_name());
+//         });
+
+//         handles.push(handle);
+//     }
+
+//     for handle in handles {
+//         handle.join().unwrap();
+//     }
+// }
+
+
+
+
 
 
 // ASSIGNMENT #3 -----------------------------------------------------

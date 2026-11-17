@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use rand::Rng;
 
 fn main() {
     println!("=== ASSIGNMENT 1: Ownership & Copy Semantics ===");
@@ -44,16 +45,18 @@ fn main() {
             &current_project,
         );
 
-        audit_task(&specific_task);
+        task_info(&specific_task);
     }
     println!("(Inner task dropped safely; parent project outlives it)\n");
 
-    println!("=== ASSIGNMENT 4: Multithreading & Concurrency Simulation ===");
+    println!("=== ASSIGNMENT 5: Multithreading & Concurrency Simulation ===");
     run_multithreaded_simulation();
+
+    
 }
 
 
-// ASSIGNMENT #4: Multithreading & Concurrent System Interaction
+// ASSIGNMENT #5: Multithreading & Concurrent System Interaction
 // 1) Define your system's shared resource and wrap it in an Arc<Mutex<T>>.
 // 2) Spawn at least 3 threads. Inside each thread, perform an action on the shared data.
 // 3) Use thread::sleep with a small, random duration in each thread to simulate network or processing delays.
@@ -63,26 +66,25 @@ fn run_multithreaded_simulation() {
     // 1. Define the shared resource and wrap it in an Arc<Mutex<T>>
     // Arc allows shared ownership across threads, and Mutex ensures thread-safe interior mutability.
     let shared_project = Arc::new(Mutex::new(SquadronProject::new(
-        "Bedford VA Hospital Support",
+        "Not Bread Alone",
         "Emily",
-        vec![String::from("Smith")],
+        vec![String::from("Annie")],
     )));
 
     let mut handles = vec![];
-    let incoming_cadets = vec!["Cadet Johnson", "Cadet Davis", "Cadet Wilson"];
+    let incoming_cadets = vec!["jacob", "aliah", "zach"];
 
-    // 2. Spawn at least 3 threads (one for each incoming cadet registration/action)
+    // 2. Spawn at least 3 threads
     for (i, cadet) in incoming_cadets.into_iter().enumerate() {
         let project_clone = Arc::clone(&shared_project);
         let cadet_name = String::from(cadet);
 
         let handle = thread::spawn(move || {
-            // 3. Simulate network or processing delays with thread::sleep
-            // Using a slightly varied duration per thread mimics real-world network jitter.
-            let delay_ms = 40 + (i as u64 * 25);
+            // 3. Use thread::sleep with small random duration
+            let mut rng = rand::thread_rng();
+            let delay_ms: u64 = rng.gen_range(10..=100); 
             thread::sleep(Duration::from_millis(delay_ms));
 
-            // Acquire the mutex lock safely before modifying the shared project team
             let mut project = project_clone.lock().unwrap();
             project.project_team.push(cadet_name.clone());
             
@@ -92,12 +94,11 @@ fn run_multithreaded_simulation() {
         handles.push(handle);
     }
 
-    // 4. Wait for all threads to finish using .join()
     for handle in handles {
         handle.join().unwrap();
     }
 
-    // Print the final state of the shared resource after all threads have completed
+    // Prints final state
     let final_project = shared_project.lock().unwrap();
     println!("\n--- Final Shared Squadron Project State ---");
     println!("Project Name: {}", final_project.get_project_name());
@@ -106,6 +107,26 @@ fn run_multithreaded_simulation() {
 }
 
 
+
+
+// fn trigger_move_error() {
+//     let counter = Mutex::new(0);
+//     let mut handles = vec![];
+
+//     for _ in 0..3 {
+//         let handle = thread::spawn(move || {
+//             let mut num = counter.lock().unwrap();
+//             *num += 1;
+//         });
+//         handles.push(handle);
+//     }
+
+//     for handle in handles {
+//         handle.join().unwrap();
+//     }
+
+//     println!("Result: {}", *counter.lock().unwrap());
+// }
 
 
 // ASSIGNMENT #3 -----------------------------------------------------
@@ -184,8 +205,9 @@ impl<'a> TaskAssignment<'a> {
     }
 }
 
-fn audit_task<'a>(task: &TaskAssignment<'a>) {
+fn task_info<'a>(task: &TaskAssignment<'a>) {
     println!("Task '{}' assigned to {}.", task.get_task_description(), task.get_task_lead());
+    println!("Deadline: {}", task.get_deadline());
     println!("Parent Project: {}", task.get_project().get_project_name());
 }
 

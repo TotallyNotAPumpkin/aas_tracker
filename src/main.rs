@@ -67,9 +67,9 @@ fn main() {
 fn run_multithreaded_simulation() {
     // 1. Define your system's shared resource and wrap it in an Arc<Mutex<T>>.
     let shared_project = Arc::new(Mutex::new(SquadronProject::new(
-        "Not Bread Alone",
-        "Emily",
-        vec![String::from("Annie")],
+        "Not Bread Alone", // name
+        "Emily", // lead
+        vec![String::from("Annie")], // team
     )));
 
     let mut handles = vec![];
@@ -86,7 +86,8 @@ fn run_multithreaded_simulation() {
             let delay_ms: u64 = rng.random_range(10..=100); 
             thread::sleep(Duration::from_millis(delay_ms));
 
-            let mut project = project_clone.lock().unwrap();
+            let mut project = project_clone.lock().unwrap(); // stops execution until thread has mutex lock
+            // once lock is acquired, thread can modify the project (and no other thread can)
             project.project_team.push(cadet_name.clone());
             
             println!("-> Thread {} successfully registered {} to the project team.", i + 1, cadet_name);
@@ -116,6 +117,8 @@ fn run_multithreaded_simulation() {
 //     let mut handles = vec![];
 
 //     for _ in 0..3 {
+//         // takes ownership of counter
+//         // however, 2nd and 3rd iteration threads will fail because count is moved into first thread since Mutex doesn't implement copy trait
 //         let handle = thread::spawn(move || {
 //             let mut num = counter.lock().unwrap();
 //             *num += 1;
@@ -126,17 +129,22 @@ fn run_multithreaded_simulation() {
 //     for handle in handles {
 //         handle.join().unwrap();
 //     }
+
 //     println!("IF YOU'RE SEEING THIS, THE CODE IS IN WHAT I THOUGHT WAS AN UNREACHABLE STATE. 
 //     I COULD GIVE YOU ADVICE FOR WHAT TO DO. BUT HONESTLY, WHY SHOULD YOU TRUST ME? 
 //     I CLEARLY SCREWED THIS UP. 
 //     I'M WRITING A MESSAGE THAT SHOULD NEVER APPEAR, YET I KNOW IT WILL PROBABLY APPEAR SOMEDAY. 
 //     ON A DEEP LEVEL, I KNOW I'M NOT UP TO THIS TASK. I'M SO SORRY")
+
+//     // counter is not in scope of main, so this still wouldn't work even after other issues are fixed
 //     println!("Result: {}", *counter.lock().unwrap());
 // }
 
 
+// Rc IS NOT Send!!!
 
 // fn trigger_rc_project_error() {
+//     // init shared project
 //     let shared_project = Rc::new(SquadronProject::new(
 //         "Bedford VA Hospital Support",
 //         "Emily",
@@ -145,21 +153,28 @@ fn run_multithreaded_simulation() {
 
 //     let mut handles = vec![];
 
+//     // clones Rc pointer so multiple references point to same data
 //     for _ in 0..3 {
 //         let project_clone = Rc::clone(&shared_project);
 
+//         // spawn thread with move keyword, transfers ownership of Rc pointer into thread
 //         let handle = thread::spawn(move || {
-
 //             println!("Project Name: {}", project_clone.get_project_name());
 //         });
 
 //         handles.push(handle);
 //     }
 
+//     // calls join and waits for threads to finish executing 
 //     for handle in handles {
 //         handle.join().unwrap();
 //     }
 // }
+
+
+
+
+
 
 
 
